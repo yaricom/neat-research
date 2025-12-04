@@ -6,7 +6,7 @@ from parameters import TimeMetricParameters, DOUBLE_POLE_BALANCING_PARAMETERS, P
 from time_metric import T_total
 
 
-def draw_pareto_front_3d(params: TimeMetricParameters) -> None:
+def draw_pareto_front_3d(params: TimeMetricParameters, show_title: bool = True) -> None:
     # Ranges
     N_vals = np.linspace(10, params.N, 990)
     p_vals = np.linspace(1, 64, 64)
@@ -76,7 +76,8 @@ def draw_pareto_front_3d(params: TimeMetricParameters) -> None:
     ax.set_xlabel('Population size N')
     ax.set_ylabel('Workers number p')
     ax.set_zlabel('T_total (seconds)')
-    ax.set_title(f'3D поверхня T(N, p) з Near-Pareto фронтом\n(мінімізація часу T та кількості воркерів p)')
+    if show_title:
+        ax.set_title(f'3D поверхня T(N, p) з Near-Pareto фронтом\n(мінімізація часу T та кількості воркерів p)')
 
     plt.legend()
     plt.tight_layout()

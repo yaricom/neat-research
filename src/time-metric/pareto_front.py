@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from parameters import TimeMetricParameters, DOUBLE_POLE_BALANCING_PARAMETERS, PARETO_EPSILON
 from time_metric import T_total
 
-def render_pareto_front(params: TimeMetricParameters) -> None:
+def render_pareto_front(params: TimeMetricParameters, show_title: bool = True) -> None:
     # Grid
     N_vals = np.linspace(50, params.N, 80)
     p_vals = np.linspace(1, 65, 64)
@@ -69,7 +69,8 @@ def render_pareto_front(params: TimeMetricParameters) -> None:
 
     plt.xlabel("Population size N")
     plt.ylabel("Workers count p")
-    plt.title("Pareto-фронт у просторі параметрів (N, p)\n(мінімізація часу T та кількості воркерів p)")
+    if show_title:
+        plt.title("Pareto-фронт у просторі параметрів (N, p)\n(мінімізація часу T та кількості воркерів p)")
     plt.legend()
     plt.tight_layout()
 

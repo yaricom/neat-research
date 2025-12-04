@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from parameters import TimeMetricParameters, DOUBLE_POLE_BALANCING_PARAMETERS, PARETO_EPSILON
 from time_metric import T_total
 
-def draw_pareto_p(params: TimeMetricParameters) -> None:
+def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None:
     p_vals=np.arange(1,64)
 
     T = T_total(
@@ -27,12 +27,13 @@ def draw_pareto_p(params: TimeMetricParameters) -> None:
 
     plt.figure(figsize=(8,5))
     plt.plot(p_vals, T, marker='o', zorder=1, color='green')
-    plt.scatter(p_vals[pareto_mask], T[pareto_mask], color='blue', label=f'Раціональна область (≤{PARETO_EPSILON*100}% від T_min)', s=30, zorder=2)
+    plt.scatter(p_vals[pareto_mask], T[pareto_mask], color='blue', label=f'Near-Pareto frontier ({PARETO_EPSILON*100}% of T_min)', s=30, zorder=2)
 
     plt.axhline(T_min, linestyle='--', label='T_min', linewidth=1)
     plt.xlabel("Workers count p")
     plt.ylabel("T_total (seconds)")
-    plt.title(f"Pareto-подібний вибір (p) з виділеною оптимальною зоною (якщо N = {params.N})")
+    if show_title:
+        plt.title(f"Pareto-подібний вибір (p) з виділеною оптимальною зоною (якщо N = {params.N})")
     plt.grid()
     plt.legend()
     plt.tight_layout()
