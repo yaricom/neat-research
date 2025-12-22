@@ -70,7 +70,7 @@ def draw_pareto_front_3d(params: TimeMetricParameters, show_title: bool = True) 
                cmap=cmap, alpha=0.5)
 
     # Plot near-Pareto frontier line
-    ax.plot(frontier_N, frontier_P, frontier_T, 'b-', linewidth=1,
+    ax.plot(frontier_N, frontier_P, frontier_T, '-', color='cyan', linewidth=1,
             label=f'Near-Pareto frontier ({PARETO_EPSILON*100:.0f}%)', zorder=9)
 
     ax.set_xlabel('Population size N')
@@ -87,7 +87,7 @@ def draw_pareto_front_3d(params: TimeMetricParameters, show_title: bool = True) 
 
 def main(args):
     draw_pareto_front_3d(
-        DOUBLE_POLE_BALANCING_PARAMETERS
+        DOUBLE_POLE_BALANCING_PARAMETERS, False
     )
 
 if __name__ == "__main__":

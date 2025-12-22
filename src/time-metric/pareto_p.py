@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from parameters import TimeMetricParameters, DOUBLE_POLE_BALANCING_PARAMETERS, PARETO_EPSILON
-from time_metric import T_total
+from time_metric import p_knee, T_total
 
 def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None:
     p_vals=np.arange(1,64)
@@ -12,12 +12,12 @@ def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None
         N=params.N,
         L=params.L,
         W=params.W,
+        V=params.V,
         p=p_vals,
         Ccomm=params.Ccomm,
         alpha=params.alpha,
         beta=params.beta,
-        gamma=params.gamma,
-        V=params.V
+        gamma=params.gamma
     )
 
     # Heuristic Pareto zone: take points within 5% of minimal T
@@ -25,11 +25,26 @@ def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None
     threshold = T_min * (1.0 + PARETO_EPSILON)
     pareto_mask = T <= threshold
 
-    plt.figure(figsize=(8,5))
-    plt.plot(p_vals, T, marker='o', zorder=1, color='green')
-    plt.scatter(p_vals[pareto_mask], T[pareto_mask], color='blue', label=f'Near-Pareto frontier ({PARETO_EPSILON*100}% of T_min)', s=30, zorder=2)
+    print(f"T_min: {T_min:.3f}")
+    p_recommended = p_vals[pareto_mask].min()
+    print(f"Recommended p: {p_recommended:.1f} (minimal p within {PARETO_EPSILON*100:.0f}% of T_min)")
+    p_knee_value = p_knee(
+        N=params.N,
+        L=params.L,
+        W=params.W,
+        V=params.V,
+        Ccomm=params.Ccomm,
+        alpha=params.alpha,
+        beta=params.beta,
+        gamma=params.gamma
+    )
+    print(f"Performance knee: {p_knee_value:.2f}")
 
-    plt.axhline(T_min, linestyle='--', label='T_min', linewidth=1)
+    plt.figure(figsize=(8,5))
+    plt.plot(p_vals, T, marker='o', zorder=1, color='limegreen', label='All points')
+    plt.scatter(p_vals[pareto_mask], T[pareto_mask], color='orange', label=f'Near-Pareto frontier ({PARETO_EPSILON*100}% of T_min)', s=30, zorder=2)
+
+    plt.axhline(T_min, linestyle='--', label=f'T_min = {T_min:.3f} seconds', linewidth=1)
     plt.xlabel("Workers count p")
     plt.ylabel("T_total (seconds)")
     if show_title:
@@ -43,7 +58,7 @@ def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None
 
 def main(args):
     draw_pareto_p(
-        DOUBLE_POLE_BALANCING_PARAMETERS
+        DOUBLE_POLE_BALANCING_PARAMETERS, False
     )
 
 if __name__ == "__main__":

@@ -79,7 +79,7 @@ def render_pareto_front(params: TimeMetricParameters, show_title: bool = True) -
 
 def main(args):
     render_pareto_front(
-        DOUBLE_POLE_BALANCING_PARAMETERS
+        DOUBLE_POLE_BALANCING_PARAMETERS, False
     )
 
 
