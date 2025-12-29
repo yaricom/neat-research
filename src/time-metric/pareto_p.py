@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from parameters import TimeMetricParameters, DOUBLE_POLE_BALANCING_PARAMETERS, PARETO_EPSILON
-from time_metric import p_knee, T_total
+from time_metric import T_total
 
 def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None:
     p_vals=np.arange(1,64)
@@ -17,7 +17,9 @@ def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None
         Ccomm=params.Ccomm,
         alpha=params.alpha,
         beta=params.beta,
-        gamma=params.gamma
+        gamma=params.gamma,
+        delta=params.delta,
+        kappa=params.kappa
     )
 
     # Heuristic Pareto zone: take points within 5% of minimal T
@@ -28,17 +30,6 @@ def draw_pareto_p(params: TimeMetricParameters, show_title: bool = True) -> None
     print(f"T_min: {T_min:.3f}")
     p_recommended = p_vals[pareto_mask].min()
     print(f"Recommended p: {p_recommended:.1f} (minimal p within {PARETO_EPSILON*100:.0f}% of T_min)")
-    p_knee_value = p_knee(
-        N=params.N,
-        L=params.L,
-        W=params.W,
-        V=params.V,
-        Ccomm=params.Ccomm,
-        alpha=params.alpha,
-        beta=params.beta,
-        gamma=params.gamma
-    )
-    print(f"Performance knee: {p_knee_value:.2f}")
 
     plt.figure(figsize=(8,5))
     plt.plot(p_vals, T, marker='o', zorder=1, color='limegreen', label='All points')

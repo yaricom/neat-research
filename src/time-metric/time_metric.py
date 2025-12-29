@@ -13,7 +13,9 @@ def T_total(
     Ccomm: float,
     alpha: float,
     beta: float,
-    gamma: float
+    gamma: float,
+    delta: float,
+    kappa: float
 ) -> np.ndarray:
     """
     Calculate the total time required for a neuroevolution process considering evaluation,
@@ -30,15 +32,18 @@ def T_total(
     :param alpha: A scaling factor for speciation time calculation (seconds per individual).
     :param beta: A scaling factor for reproduction time calculation (seconds per individual).
     :param gamma: A scaling factor for evaluation time calculation (seconds per individual).
+    :param delta: A scaling factor for parallelism management time (seconds per individual).
+    :param kappa: A degradation factor for sublinear increase of time for parallelism support (seconds per individual).
 
     :return: The total time required for the process (seconds).
     """
-    evaluation = evaluation_time(N=N, L=L, W=W, gamma=gamma)
+    evaluation = evaluation_time(N=N, L=L, V=V, gamma=gamma)
     reproduction = reproduction_time(beta=beta, N=N, W=W, V=V)
     speciation = speciation_time(alpha=alpha, N=N)
     communication = communication_time(N=N, Ccomm=Ccomm)
+    parallelism_management = parallelism_management_time(p=1, delta=delta, kappa=kappa)
 
-    return G * (evaluation / p + communication + speciation + reproduction)
+    return G * (evaluation / p + communication + speciation + reproduction + parallelism_management)
 
 
 def non_parallelizable_time(
@@ -48,6 +53,9 @@ def non_parallelizable_time(
     Ccomm: float,
     alpha: float,
     beta: float,
+    p: Union[int, np.ndarray],
+    delta: float,
+    kappa: float
 ) -> float:
     """
     Calculates the non-parallelizable time required by a system, considering reproduction,
@@ -68,10 +76,11 @@ def non_parallelizable_time(
     reproduction = reproduction_time(beta=beta, N=N, W=W, V=V)
     speciation = speciation_time(alpha=alpha, N=N)
     communication = communication_time(N=N, Ccomm=Ccomm)
-    return reproduction + communication + speciation
+    parallelism_management = parallelism_management_time(p=p, delta=delta, kappa=kappa)
+    return reproduction + communication + speciation + parallelism_management
 
 
-def evaluation_time(N: int, L: int, W: float, gamma: float) -> float:
+def evaluation_time(N: int, L: int, V: float, gamma: float) -> float:
     """
     Calculates the evaluation time of each individual in the population.
 
@@ -80,43 +89,11 @@ def evaluation_time(N: int, L: int, W: float, gamma: float) -> float:
 
     :param N: The integer number indicating the number of tasks.
     :param L: The integer length parameter associated with each task.
-    :param W: An average number of connections in the phenotype of each individual's ANN.
+    :param V: An average number of nodes in the phenotype of each individual's ANN.
     :param gamma: A scaling factor for evaluation time calculation (seconds per individual).
     :return: A float representing the computed evaluation time.
     """
-    return N * L * W * gamma
-
-def p_knee(
-    N: Union[int, np.ndarray],
-    L: int,
-    W: float,
-    V: float,
-    Ccomm: float,
-    alpha: float,
-    beta: float,
-    gamma: float
-) -> float:
-    """
-    Computes the performance knee point based on parallel and non-parallel
-    components of execution time. The function evaluates the ratio of the
-    parallelizable component to the non-parallelizable component. This
-    value can be used to determine the optimal number of processing units.
-
-    :param N: The number of individuals in the population.
-    :param L: The number of steps in the environment simulation process to estimate the fitness of the individual.
-    :param W: An average number of connections in the phenotype of each individual's ANN.
-    :param V: An average number of nodes in the phenotype of each individual's ANN.
-    :param Ccomm: The communication time cost per individual in the population (seconds).
-    :param alpha: A scaling factor for speciation time calculation (seconds per individual).
-    :param beta: A scaling factor for reproduction time calculation (seconds per individual).
-    :param gamma: A scaling factor for evaluation time calculation (seconds per individual).
-
-    :return: A float value representing the ratio of the parallelizable
-        component of execution time to the non-parallelizable component.
-    """
-    A = evaluation_time(N=N, L=L, W=W, gamma=gamma) # parallel part
-    B = non_parallelizable_time(N=N, W=W, V=V, Ccomm=Ccomm, alpha=alpha, beta=beta) # non-parallel part
-    return A / B
+    return N * L * V * gamma
 
 def communication_time(N: int, Ccomm: float) -> float:
     return N * Ccomm
@@ -126,3 +103,6 @@ def speciation_time(N: int, alpha: float) -> float:
 
 def reproduction_time(N: int, beta: float, W: float, V: float) -> float:
     return beta * N * (W + V)
+
+def parallelism_management_time(p: Union[int, np.ndarray], delta: float, kappa: float) -> float:
+    return p * (delta ** kappa)

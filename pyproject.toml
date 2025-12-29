@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "numpy",
-    "matplotlib"
+    "matplotlib",
+    "pandas-stubs~=2.3.3",
+    "scipy-stubs~=1.16.3",
 ]
 
 [build-system]
