@@ -40,7 +40,7 @@ def main():
             A_pred=analytical_model.A,
             B_pred=analytical_model.B,
             d_pred=analytical_model.delta,
-            k_pred=analytical_model.kappa
+            p_sat_pred=analytical_model.p_sat,
         )
 
         # Save data to dataframe
@@ -59,12 +59,12 @@ def main():
             'A': analytical_model.A,
             'B': analytical_model.B,
             'delta': analytical_model.delta,
-            'kappa': analytical_model.kappa,
             'R^2': analytical_model.r2,
+            'p_sat': analytical_model.p_sat,
         })
 
         print(
-            f"N={N}: p*_exp={p_star_exp:.0f}, p*_model={p_star_model:.0f}, epsilon={epsilon_p:.1f}, R^2={analytical_model.r2:.4f}, pareto band: [{p_band_min},{p_band_max}]")
+            f"N={N}: p*_exp={p_star_exp:.0f}, p*_model={p_star_model:.0f}, epsilon={epsilon_p:.1f}, p_saturation={analytical_model.p_sat:.0f}, R^2={analytical_model.r2:.4f}, pareto band: [{p_band_min},{p_band_max}]")
         print(
             f"  T_min_exp: {experimental_model.t_min:.3f}, T_min_model: {analytical_model.t_min:.3f}, dT={delta_T:.3f}, epsilon={epsilon_T:.1f}, pareto={pareto:.3f}")
         print(

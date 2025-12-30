@@ -11,14 +11,14 @@ from analysis.model import read_data_csv, estimate_pareto_band
 from analysis.model_fit import load_fitted_model
 
 
-def estimate_Tp_N(N):
+def estimate_Tp_N(N_target):
     # Load experimental data
-    df_to_predict = read_data_csv(os.path.join(DATA_DIR, f"workers-time-{N}.csv")).df
+    df_to_predict = read_data_csv(os.path.join(DATA_DIR, f"workers-time-{N_target}.csv")).df
     p_exp = df_to_predict["p"].to_numpy(dtype=float)
     T_exp = df_to_predict["T_ms"].to_numpy(dtype=float)
 
     # Fitted model from calibration data
-    calib = load_fitted_model(os.path.join(DATA_DIR, "analytical_fitted_model-100_2000.csv"))
+    calib = load_fitted_model(os.path.join(DATA_DIR, "analytical_fitted_model-500_3000.csv"))
 
     # Fit simple models of parameters vs log(N): param = a + b*logN
     logN = np.log(calib["N"].values)
@@ -30,9 +30,8 @@ def estimate_Tp_N(N):
     coef_A = fit_lin(logN, calib["A"].values)
     coef_B = fit_lin(logN, calib["B"].values)
     coef_d = fit_lin(logN, calib["delta"].values)
-    coef_k = fit_lin(logN, calib["kappa"].values)
+    coef_p_sat = fit_lin(logN, calib["p_sat"].values)
 
-    N_target = 5000.0
     lnNt = np.log(N_target)
     A_pred = float(coef_A[0] + coef_A[1]*lnNt)
     B_pred = float(coef_B[0] + coef_B[1]*lnNt)
@@ -89,7 +88,7 @@ def estimate_Tp_N(N):
 
     # Plot
     plt.figure(figsize=(9,5.5))
-    plt.scatter(p_exp, T_exp, label=f"Experimental data (N={N})", zorder=3)
+    plt.scatter(p_exp, T_exp, label=f"Experimental data (N={N_target})", zorder=3)
 
     plt.plot(p_grid, T_pred, "r--", linewidth=2, label="Estimated data (from calibration runs)")
 
@@ -103,7 +102,7 @@ def estimate_Tp_N(N):
 
     plt.xlabel(r"Workers number $p$")
     plt.ylabel("Time for one epoch of evolution, ms")
-    plt.title(rf"N={N}: estimation $T(p)$ vs experiment + optimal and 5% near Pareto-optimal area")
+    plt.title(rf"N={N_target}: estimation $T(p)$ vs experiment + optimal and 5% near Pareto-optimal area")
     plt.grid(True, alpha=0.35)
     plt.legend()
     plt.tight_layout()
@@ -120,7 +119,7 @@ def estimate_Tp_N(N):
     print(f"5% near-optimal band: [{p_band_min},{p_band_max}]")
 
 
-    out_path = os.path.join(OUTPUT_DIR, f"Tp_N{N}_pred_vs_exp_pareto5_optima.png")
+    out_path = os.path.join(OUTPUT_DIR, f"Tp_N{N_target}_pred_vs_exp_pareto5_optima.png")
     plt.savefig(out_path, dpi=200)
 
     print(f"Saved to: {out_path}")

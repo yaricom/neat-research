@@ -46,8 +46,15 @@ def plot_one(
     plt.plot(p, T, marker="o", linestyle="-", label="Experimental data")
     plt.plot(
         p_grid, T_fit, linestyle="--",
-        label=rf"Model $A/p + B + \delta p^\kappa$ (R$^2$={analytic_model.r2:.4f})"
+        label=r"Model $A/p + B + \delta\frac{p}{p+p_{\mathrm{sat}}}$ (R$^2$=%.4f)" % analytic_model.r2
     )
+
+    # T(p)=\frac{A}{p}+B+\delta\,\frac{p}{p+p_{\mathrm{sat}}},
+
+    # Shade predicted 5% Pareto band
+    if p_band_min is not None:
+        plt.axvspan(p_band_min, p_band_max, alpha=0.12,
+                    label=f"Estimated 5% Pareto-area: p∈[{p_band_min},{p_band_max}]")
 
     # local quadratic approximation of p*_exp
     p_loc = np.linspace(experimental_data.df["p"].min(), experimental_data.df["p"].max(), 200)
@@ -145,7 +152,7 @@ def main():
         })
 
         print(
-            f"N={N}: p*_exp={p_star_exp:.0f}, p*_model={p_star_model:.0f}, epsilon={epsilon_p:.1f}, R^2={analytical_model.r2:.4f}, pareto band: [{p_band_min},{p_band_max}]")
+            f"N={N}: p*_exp={p_star_exp:.0f}, p*_model={p_star_model:.0f}, epsilon={epsilon_p:.1f}, p_saturation={analytical_model.p_sat:.0f}, R^2={analytical_model.r2:.4f}, pareto band: [{p_band_min},{p_band_max}]")
         print(
             f"  T_min_exp: {experimental_model.t_min:.3f}, T_min_model: {analytical_model.t_min:.3f}, dT={delta_T:.3f}, epsilon={epsilon_T:.1f}, pareto={pareto:.3f}")
         print(
