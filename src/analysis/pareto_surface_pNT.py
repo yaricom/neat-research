@@ -1,11 +1,8 @@
-import os.path
-
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-from analysis.constants import OUTPUT_DIR
-from analysis.model import time_model
+from analysis.model import time_model, p_star_model_p_sat
 from analysis.model_fit import load_fitted_model
 
 # Fitted params at discrete N
@@ -30,7 +27,7 @@ def T_model(N, p):
 
 
 # Grid (only plot up to p_max)
-N_vals = np.linspace(100, 2000, 140)
+N_vals = np.linspace(500, 3000, 2500)
 p_max = 100
 p_vals = np.arange(1, p_max + 1)
 
@@ -94,17 +91,27 @@ surf = ax.plot_surface(NN, PP, T, rstride=2, cmap=cmap, cstride=2, linewidth=0, 
 
 # Overlay optimal line and 5% band boundaries
 ax.plot(
-    N_vals, p_star, T_star, linewidth=2, color="cyan", label=r"$p^*$ model", zorder=6
+    N_vals, p_star, T_star, linewidth=2, color="cyan", label=r"$p^*_{model}$ ", zorder=6
 )
 ax.plot(
-    N_vals, p_low, T_low, linewidth=2, color="orange", label=r"$p_{min}^{5\%}$ at 5% from $T_{min}$", zorder=6
+    N_vals, p_low, T_low, linewidth=2, color="orange", label=r"$p_{model}^{5\%}$ at 5% from $T_{min}^{model}$", zorder=6
 )
-# ax.plot(N_vals, p_high, T_high, linewidth=2, color="green", zorder=6)
+ax.plot(N_vals, p_high, T_high, linewidth=2, color="orange", zorder=6, alpha=0.8, antialiased=True)
+
+# Overlay experimental minimum time points
+N_exp = data["N"].values
+p_star_exp = data["p_star_exp"].values
+t_min_exp = data["t_min_exp"].values
+ax.plot(
+    N_exp, p_star_exp, t_min_exp,
+    linewidth=0, marker='o', markersize=4, color="red",
+    label=r"$p^*_{exp}$ at $T_{min}^{exp}$", zorder=7
+)
 
 # Contours on the bottom plane for readability (only finite values)
 finite_T = np.nan_to_num(T, nan=np.nanmin(T[np.isfinite(T)]))
 zmin = np.nanmin(T[np.isfinite(T)])
-ax.contour(NN, PP, finite_T, zdir="z", cmap=cmap, offset=zmin, levels=10)
+ax.contour(NN, PP, finite_T, zdir="z", cmap=cmap, offset=zmin, levels=20)
 
 ax.set_xlabel("Population size N")
 ax.set_ylabel("Workers p (constraint: p ≤ N)")
@@ -119,5 +126,5 @@ plt.tight_layout()
 fig.show()
 
 
-out_path = os.path.join(OUTPUT_DIR, "pNT_surface_with_pareto5_band.png")
-plt.savefig(out_path, dpi=220)
+# out_path = os.path.join(OUTPUT_DIR, "pNT_surface_with_pareto5_band.png")
+# plt.savefig(out_path, dpi=220)

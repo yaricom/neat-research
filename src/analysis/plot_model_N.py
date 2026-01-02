@@ -19,12 +19,12 @@ import os.path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from PIL import Image
 
 from analysis.charts import build_combined
-from analysis.constants import CSV_PATHS, OUTPUT_DIR, DATA_DIR
+from analysis.constants import CSV_PATHS, OUTPUT_DIR, DATA_DIR, EXPERIMENTAL_WINDOW_SIZE
 from analysis.model import AnalyticModelFit, ExperimentalData, ExperimentalModelFit, fit_model_for_N, \
-    p_star_exp_local_quadratic, time_model, read_data_csv, p_star_exp_lowess, estimate_pareto_band
+    p_star_exp_local_quadratic, time_model, estimate_pareto_band
+from analysis.data_helpers import read_data_csv
 
 
 def plot_one(
@@ -104,7 +104,7 @@ def main():
         experimental_data = read_data_csv(csv_path)
         analytical_model = fit_model_for_N(N, data=experimental_data)
         results[N] = analytical_model
-        experimental_model= p_star_exp_local_quadratic(data=experimental_data, k=7, p_col="p", t_col="T_ms")
+        experimental_model= p_star_exp_local_quadratic(data=experimental_data, k=EXPERIMENTAL_WINDOW_SIZE)
 
         out = os.path.join(OUTPUT_DIR, f"final_Tp_N{N}.png")
         plot_one(

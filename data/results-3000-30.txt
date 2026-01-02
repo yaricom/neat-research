@@ -1,8 +1,8 @@
 Solved 9 trials from 10, success rate: 0.900000
 Random seed: 1657725607
 Average
-        Trial duration:         15.311852229s
-        Epoch duration:         38.146115ms
+        Trial duration:         14.282990866s
+        Epoch duration:         37.285266ms
         Generations/trial:      28.5
 
 Champion found in 1 trial run
@@ -17,8 +17,8 @@ Champion found in 1 trial run
 
 Averages among winners (successfull solvers)
         Avg Nodes:              14.1
-        Avg Genes:              22.6
-        Avg Evaluations:        60731.8
+        Avg Genes:              22.7
+        Avg Evaluations:        60731.1
         Generations/trial:      20.6
 
         Diversity:              2222.333333
@@ -32,7 +32,7 @@ Averages of the best organisms evaluated during experiment
         Age:                    2.655940
         Fitness:                0.100897
 
-Efficiency score:               8.496019
+Efficiency score:               8.514366
 
 >>> Start genome file:  ./data/pole2_markov_startgenes
 >>> Configuration file: ./data/pole2_markov.neat

@@ -6,19 +6,25 @@ import numpy as np
 from numpy.linalg import lstsq
 
 from analysis.charts import build_combined
-from analysis.constants import DATA_DIR, OUTPUT_DIR
-from analysis.model import read_data_csv, estimate_pareto_band
+from analysis.constants import DATA_DIR, OUTPUT_DIR, EXPERIMENTAL_WINDOW_SIZE
+from analysis.model import estimate_pareto_band, time_model, p_star_exp_local_quadratic
+from analysis.data_helpers import read_data_csv
 from analysis.model_fit import load_fitted_model
 
 
-def estimate_Tp_N(N_target):
+def estimate_Tp_N(N_target: int, Ns: list[int]):
     # Load experimental data
-    df_to_predict = read_data_csv(os.path.join(DATA_DIR, f"workers-time-{N_target}.csv")).df
-    p_exp = df_to_predict["p"].to_numpy(dtype=float)
-    T_exp = df_to_predict["T_ms"].to_numpy(dtype=float)
+    experiment_data_path = os.path.join(DATA_DIR, f"workers-time-{N_target}.csv")
+    experimental_data = read_data_csv(experiment_data_path)
+
+    p_exp = experimental_data.df["p"].to_numpy(dtype=float)
+    T_exp = experimental_data.df["T_ms"].to_numpy(dtype=float)
 
     # Fitted model from calibration data
-    calib = load_fitted_model(os.path.join(DATA_DIR, "analytical_fitted_model-500_3000.csv"))
+    calib = load_fitted_model(os.path.join(DATA_DIR, "analytical_fitted_model.csv"))
+
+    # Filter out N values that need to be estimated (not measured)
+    calib = calib[~calib["N"].isin(Ns)]
 
     # Fit simple models of parameters vs log(N): param = a + b*logN
     logN = np.log(calib["N"].values)
@@ -36,17 +42,16 @@ def estimate_Tp_N(N_target):
     A_pred = float(coef_A[0] + coef_A[1]*lnNt)
     B_pred = float(coef_B[0] + coef_B[1]*lnNt)
     d_pred = float(coef_d[0] + coef_d[1]*lnNt)
-    k_pred = float(coef_k[0] + coef_k[1]*lnNt)
+    p_sat_pred = float(coef_p_sat[0] + coef_p_sat[1]*lnNt)
 
     # Ensure positivity where needed
     A_pred = max(A_pred, 1e-12)
     d_pred = max(d_pred, 1e-12)
-    k_pred = max(k_pred, 1e-6)
 
     # Predicted curve over the same p-range (continuous)
-    points = 800  # len(p_exp)  #
+    points = 3000  # len(p_exp)  #
     p_grid = np.linspace(1, max(p_exp), points)
-    T_pred = A_pred/p_grid + B_pred + d_pred*(p_grid**k_pred)
+    T_pred = time_model(p=p_grid, A=A_pred, B=B_pred, delta=d_pred, p_sat=p_sat_pred)
 
     # Predicted optimum (continuous)
     idx_min = int(np.argmin(T_pred))
@@ -55,36 +60,11 @@ def estimate_Tp_N(N_target):
 
     # Predicted 5% Pareto band (in integer p for display + shading)
     p_band_min, p_band_max = estimate_pareto_band(
-        p_exp_max=int(max(p_exp)), A_pred=A_pred, B_pred=B_pred, d_pred=d_pred, k_pred=k_pred
+        p_exp_max=int(max(p_exp)), A_pred=A_pred, B_pred=B_pred, d_pred=d_pred, p_sat_pred=p_sat_pred
     )
 
     # Experimental optimum via local quadratic regression on 7 points around discrete minimum
-    order = np.argsort(p_exp)
-    p_sorted = p_exp[order]
-    T_sorted = T_exp[order]
-
-    i0 = int(np.argmin(T_sorted))  # discrete min index in sorted array
-    # pick 7 points centered at i0 (clamped)
-    start = max(0, i0-3)
-    end = min(len(p_sorted), start+7)
-    start = max(0, end-7)
-    p7 = p_sorted[start:end]
-    T7 = T_sorted[start:end]
-
-    # quadratic fit: T = a p^2 + b p + c
-    X = np.column_stack([p7**2, p7, np.ones_like(p7)])
-    (a,b,c), *_ = lstsq(X, T7, rcond=None)
-
-    # vertex
-    if a > 0:
-        # from derivative = 0 at vertex: -2b/a
-        p_exp_star = -b/(2*a)
-    else:
-        p_exp_star = float(p_sorted[i0])
-    # clamp to possible domain
-    p_exp_star = float(np.clip(p_exp_star, p_sorted.min(), p_sorted.max()))
-    # the experimental minimum (4*a*c - b^2)/4*a
-    T_exp_star = float((4*a*c) - b**2)/float(4*a)
+    experimental_model = p_star_exp_local_quadratic(data=experimental_data, k=EXPERIMENTAL_WINDOW_SIZE)
 
     # Plot
     plt.figure(figsize=(9,5.5))
@@ -98,8 +78,9 @@ def estimate_Tp_N(N_target):
 
     # Vertical lines for optima
     plt.axvline(p_model_star, linestyle="--", linewidth=2, label=f"Estimated p*≈{p_model_star:.0f}")
-    plt.axvline(p_exp_star, linestyle=":", linewidth=2.5, label=f"Experimental p*≈{p_exp_star:.0f} (quadratic by 7 point)")
+    plt.axvline(experimental_model.p_star, linestyle=":", linewidth=2.5, label=f"Experimental p*≈{experimental_model.p_star:.0f} (quadratic by 7 point)")
 
+    plt.xlim(p_exp.min(), 100)
     plt.xlabel(r"Workers number $p$")
     plt.ylabel("Time for one epoch of evolution, ms")
     plt.title(rf"N={N_target}: estimation $T(p)$ vs experiment + optimal and 5% near Pareto-optimal area")
@@ -108,14 +89,14 @@ def estimate_Tp_N(N_target):
     plt.tight_layout()
     # plt.show()
 
-    delta_T = math.fabs(T_model_star - T_exp_star)
-    epsilon = (delta_T / T_exp_star) * 100
+    delta_T = math.fabs(T_model_star - experimental_model.t_min)
+    epsilon = (delta_T / experimental_model.t_min) * 100
     pareto = 1.05 * T_model_star
 
-    epsilon_p = math.fabs(p_model_star - p_exp_star) / p_exp_star * 100
+    epsilon_p = math.fabs(p_model_star - experimental_model.p_star) / experimental_model.p_star * 100
 
-    print(f"p* model: {p_model_star:.0f} (experimental: {p_exp_star:.0f}), epsilon={epsilon_p:.1f}%")
-    print(f"T* model: {T_model_star:.2f} (experimental: {T_exp_star:.2f}), delta={delta_T:.3f}, epsilon={epsilon:.1f}% (pareto={pareto:.3f})")
+    print(f"p* model: {p_model_star:.0f} (experimental: {experimental_model.p_star:.0f}), epsilon={epsilon_p:.1f}%")
+    print(f"T* model: {T_model_star:.2f} (experimental: {experimental_model.t_min:.2f}), delta={delta_T:.3f}, epsilon={epsilon:.1f}% (pareto={pareto:.3f})")
     print(f"5% near-optimal band: [{p_band_min},{p_band_max}]")
 
 
@@ -134,7 +115,7 @@ def main():
 
     Ns = [3000, 5000]
     for N in Ns:
-        out_path = estimate_Tp_N(N)
+        out_path = estimate_Tp_N(N, Ns=Ns)
         perN_paths.append(out_path)
 
     suffix = "-".join(map(str, Ns))

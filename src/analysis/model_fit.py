@@ -4,8 +4,9 @@ from typing import Optional
 
 import pandas as pd
 
-from analysis.constants import OUTPUT_DIR, CSV_PATHS, DATA_DIR
-from analysis.model import read_data_csv, fit_model_for_N, p_star_exp_local_quadratic, estimate_pareto_band
+from analysis.constants import OUTPUT_DIR, CSV_PATHS, DATA_DIR, EXPERIMENTAL_WINDOW_SIZE
+from analysis.model import fit_model_for_N, p_star_exp_local_quadratic, estimate_pareto_band
+from analysis.data_helpers import read_data_csv
 
 
 def load_fitted_model(csv_path: Optional[str] = None ):
@@ -25,7 +26,7 @@ def main():
     for N, csv_path in CSV_PATHS.items():
         experimental_data = read_data_csv(csv_path)
         analytical_model = fit_model_for_N(N, data=experimental_data)
-        experimental_model = p_star_exp_local_quadratic(data=experimental_data, k=7, p_col="p", t_col="T_ms")
+        experimental_model = p_star_exp_local_quadratic(data=experimental_data, k=EXPERIMENTAL_WINDOW_SIZE)
 
         delta_T = math.fabs(analytical_model.t_min - experimental_model.t_min)
         epsilon_T = (delta_T / experimental_model.t_min) * 100

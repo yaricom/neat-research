@@ -12,3 +12,5 @@ CSV_PATHS = {
     3000: os.path.join(DATA_DIR, "workers-time-3000.csv"),
     5000: os.path.join(DATA_DIR, "workers-time-5000.csv"),
 }
+
+EXPERIMENTAL_WINDOW_SIZE = 7
