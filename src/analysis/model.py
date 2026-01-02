@@ -1,4 +1,5 @@
 import dataclasses
+import math
 from typing import Tuple
 
 import numpy as np
@@ -34,6 +35,7 @@ class AnalyticModelFit:
     kappa: float
     p_star_model: float
     t_min: float
+    p_sat: float
     # coefficient of determination
     r2: float
 
@@ -46,7 +48,11 @@ class ExperimentalData:
     p_column: str
 
 
-def time_model(p, A, B, delta, kappa):
+def time_model(p, A, B, delta, p_sat):
+    """
+    The analytical simplified saturation time model
+    T(N,p) = A/p + B + delta*(p/(p+p_sat))
+    """
     p = np.asarray(p, dtype=float)
     return A/p + B + delta*(p/(p + p_sat))
 
@@ -60,34 +66,36 @@ def fit_model_for_N(N: int, data: ExperimentalData):
     B0 = float(np.min(T))
     A0 = float(max(1e-9, (T[0] - B0) * p[0]))
     delta0 = float(max(1e-9, (T[-1] - B0) / max(1.0, p[-1] ** 0.5)))
-    kappa0 = 0.6
+    ps0 = np.median(p)
 
-    # fit with constraints: all params non-negative; kappa in [0, 2]
     popt, _ = curve_fit(
         time_model, p, T,
-        p0=[A0, B0, delta0, kappa0],
-        bounds=([0, 0, 0, 0], [np.inf, np.inf, np.inf, 2.0]),
+        p0=[A0, B0, delta0, ps0],
+        bounds=(0, np.inf),
         maxfev=200000
     )
-    A, B, delta, kappa = popt
+    A, B, delta, p_sat = popt
 
-    # analytic optimum from derivative:
-    # d/dp (A/p + B + delta p^kappa) = -A/p^2 + delta*kappa*p^(kappa-1) = 0
-    # => p* = (A/(delta*kappa))^(1/(kappa+1))
-    if delta > 0 and kappa > 0:
-        p_star_model = float((A / (delta * kappa)) ** (1.0 / (kappa + 1.0)))
+    if delta > 0 and p_sat > 0:
+        p_star_m = p_star_model_p_sat(A=A, delta=delta, p_sat=p_sat)
     else:
-        p_star_model = float("nan")
+        p_star_m = float("nan")
 
     # coefficient of determination R^2
-    T_hat = time_model(p, A, B, delta, kappa)
+    T_hat = time_model(p, A, B, delta, p_sat)
     r2 = r2_score(T, T_hat)
 
     T_min = float(np.nanmin(T_hat))
 
     return AnalyticModelFit(
-        N=N, A=A, B=B, delta=delta, kappa=kappa, p_star_model=p_star_model, t_min=T_min, r2=r2
+        N=N, A=A, B=B, delta=delta, kappa=0, p_star_model=p_star_m, t_min=T_min, r2=r2, p_sat=p_sat
     )
+
+def p_star_model_p_sat(A: float, delta: float, p_sat: float):
+    """
+    Calculate the optimal number of workers p*_model for given saturation time model parameters.
+    """
+    return p_sat / (math.sqrt(delta * p_sat / A) - 1.0)
 
 
 def p_star_exp_local_quadratic(data: ExperimentalData, k: int = 7):
@@ -180,7 +188,7 @@ def p_star_exp_lowess(df: pd.DataFrame, p_col="p", t_col="T_ms",
 
 
 def estimate_pareto_band(
-    p_exp_max: int, A_pred: float, B_pred: float, d_pred: float, k_pred: float
+    p_exp_max: int, A_pred: float, B_pred: float, d_pred: float, p_sat_pred: float
 ) -> Tuple[int, int]:
     p_int = np.arange(1, p_exp_max + 1) #  int(max(p_exp))
     T_pred_int = time_model(
@@ -188,7 +196,7 @@ def estimate_pareto_band(
         A=A_pred,
         B=B_pred,
         delta=d_pred,
-        kappa=k_pred
+        p_sat=p_sat_pred
     )
     Tmin_int = float(T_pred_int.min())
     thr = 1.05 * Tmin_int

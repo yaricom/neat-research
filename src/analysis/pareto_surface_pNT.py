@@ -20,9 +20,9 @@ def T_model(N, p):
     A = interp_param("A", N)
     B = interp_param("B", N)
     delta = interp_param("delta", N)
-    kappa = interp_param("kappa", N)
+    p_sat = interp_param("p_sat", N)
     return time_model(
-        p, A=A, B=B, delta=delta, kappa=kappa
+        p, A=A, B=B, delta=delta, p_sat=p_sat
     )
 
 
@@ -39,9 +39,9 @@ mask_invalid = PP > NN
 A = interp_param("A", NN)
 B = interp_param("B", NN)
 delta = interp_param("delta", NN)
-kappa = interp_param("kappa", NN)
+p_sat = interp_param("p_sat", NN)
 
-T = (A / PP) + B + delta * (PP ** kappa)
+T = time_model(p=PP, A=A, B=B, delta=delta, p_sat=p_sat)
 T = np.where(mask_invalid, np.nan, T)
 
 # Compute 5% near-Pareto band per N (based on Tmin(N) over allowed p)
@@ -76,8 +76,8 @@ for i, N in enumerate(N_vals):
     # Continuous optimum (clipped)
     Ai = interp_param("A", N)
     di = interp_param("delta", N)
-    ki = interp_param("kappa", N)
-    p_cont = (Ai / (di * ki)) ** (1.0 / (ki + 1.0))
+    p_sati = interp_param("p_sat", N)
+    p_cont = p_star_model_p_sat(A=Ai, delta=di, p_sat=p_sati)
     p_star[i] = np.clip(p_cont, 1, p_allowed_max)
     T_star[i] = T_model(N, p_star[i])
 

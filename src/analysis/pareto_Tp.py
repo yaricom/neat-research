@@ -11,7 +11,7 @@ fitted_model_df = load_fitted_model()
 
 colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
 
-p_plot_max = 60
+p_plot_max = 90
 p_all = np.arange(1, p_plot_max + 1)
 
 plt.figure(figsize=(10, 7))
@@ -19,7 +19,7 @@ plt.figure(figsize=(10, 7))
 for _, row in fitted_model_df.iterrows():
     N = int(row['N'])
     p = p_all[p_all <= N]
-    T = time_model(p, A=row['A'], B=row['B'], delta=row['delta'], kappa=row['kappa'])
+    T = time_model(p, A=row['A'], B=row['B'], delta=row['delta'], p_sat=row['p_sat'])
     Tmin = float(np.min(T))
     thr = 1.05 * Tmin # 5% from Tmin
     mask = T <= thr

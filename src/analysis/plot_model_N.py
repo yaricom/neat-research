@@ -39,8 +39,14 @@ def plot_one(
     T = d["T_ms"].values.astype(float)
 
     # dense grid for fitted curve
-    p_grid = np.linspace(p.min(), p.max(), 400)
-    T_fit = time_model(p_grid, analytic_model.A, analytic_model.B, analytic_model.delta, analytic_model.kappa)
+    p_stop = 90  # p.max()
+    p_grid = np.linspace(p.min(), p_stop, 400)
+    T_fit = time_model(p=p_grid, A=analytic_model.A, B=analytic_model.B, delta=analytic_model.delta, p_sat=analytic_model.p_sat)
+
+    # Predicted 5% Pareto band (in integer p for display + shading)
+    p_band_min, p_band_max = estimate_pareto_band(
+        p_exp_max=int(max(p)), A_pred=analytic_model.A, B_pred=analytic_model.B, d_pred=analytic_model.delta, p_sat_pred=analytic_model.p_sat
+    )
 
     plt.figure()
     plt.plot(p, T, marker="o", linestyle="-", label="Experimental data")
@@ -56,15 +62,19 @@ def plot_one(
         plt.axvspan(p_band_min, p_band_max, alpha=0.12,
                     label=f"Estimated 5% Pareto-area: p∈[{p_band_min},{p_band_max}]")
 
-    # local quadratic approximation of p*_exp
-    p_loc = np.linspace(experimental_data.df["p"].min(), experimental_data.df["p"].max(), 200)
+    # local quadratic approximation of p*_exp (plot only in fitted window range)
+    w = experimental_model.w
+    p_window_min = w["p"].min()
+    p_window_max = w["p"].max()
+    p_loc = np.linspace(p_window_min, p_window_max, num=200)
     T_loc = experimental_model.a * p_loc ** 2 + experimental_model.b * p_loc + experimental_model.c
-    plt.plot(p_loc, T_loc, linestyle=":", label="Local quadratic approximation ($p^*_{exp}$)")
+    plt.plot(p_loc, T_loc, linestyle=":", linewidth=2, label="Local quadratic approximation ($p^*_{exp}$)")
 
     plt.axvline(experimental_model.p_star, linestyle=":", label=rf"$p^*_{{exp,loc}}={experimental_model.p_star:.0f}$")
     plt.axvline(analytic_model.p_star_model, linestyle="-.",
                 label=rf"$p^*_{{model}}={analytic_model.p_star_model:.0f}$")
 
+    plt.xlim(p.min(), p_stop)
     plt.xlabel(r"Workers number $p$")
     plt.ylabel("Time for one epoch of evolution, ms")
     # plt.title(f"Залежність часу від кількості воркерів (N={analytic_model.N})")
@@ -73,23 +83,6 @@ def plot_one(
     plt.savefig(out_path, dpi=200)
     plt.close()
 
-# def build_combined(image_paths, out_path: str):
-#     """Combine already saved per-N images into a 2x2 mosaic."""
-#     imgs = [Image.open(p) for p in image_paths]
-#     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-#     axes = axes.flatten()
-#     titles = ["N=100", "N=500", "N=1000", "N=2000"]
-#
-#     for ax, img, title in zip(axes, imgs, titles):
-#         ax.imshow(img)
-#         ax.axis("off")
-#         ax.set_title(title)
-#
-#     plt.tight_layout()
-#     # plt.show()
-#
-#     plt.savefig(out_path, dpi=200)
-#     plt.close()
 
 def main():
     results = {}
@@ -128,7 +121,7 @@ def main():
             A_pred=analytical_model.A,
             B_pred=analytical_model.B,
             d_pred=analytical_model.delta,
-            k_pred=analytical_model.kappa
+            p_sat_pred=analytical_model.p_sat,
         )
 
         # Save data to dataframe
@@ -147,8 +140,8 @@ def main():
             'A': analytical_model.A,
             'B': analytical_model.B,
             'delta': analytical_model.delta,
-            'kappa': analytical_model.kappa,
             'R^2': analytical_model.r2,
+            'p_sat': analytical_model.p_sat,
         })
 
         print(
@@ -166,7 +159,7 @@ def main():
     print(f"Saved data to: {data_csv_path}\n")
 
     combined_out = os.path.join(OUTPUT_DIR, "final_combined_Tp.png")
-    build_combined(perN_paths, combined_out, nrows=2, ncols=2, titles=["N=100", "N=500", "N=1000", "N=2000"])
+    build_combined(perN_paths, combined_out, nrows=2, ncols=2, titles=["N=500", "N=1000", "N=2000", "N=3000", ])
     print("Saved combined figure:", combined_out)
 
 if __name__ == "__main__":
