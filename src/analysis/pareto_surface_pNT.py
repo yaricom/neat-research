@@ -7,6 +7,7 @@ from analysis.model_fit import load_fitted_model
 
 # Fitted params at discrete N
 data = load_fitted_model()
+data = data[~data["N"].isin([5000])]  # skip 5000
 logN = np.log(data["N"].values.astype(float))
 
 

@@ -9,7 +9,7 @@ from analysis.model import fit_model_for_N, p_star_exp_local_quadratic, estimate
 from analysis.data_helpers import read_data_csv
 
 
-def load_fitted_model(csv_path: Optional[str] = None ):
+def load_fitted_model(csv_path: Optional[str] = None) -> pd.DataFrame:
     if csv_path is None:
         csv_path = os.path.join(DATA_DIR, "analytical_fitted_model.csv")
 
